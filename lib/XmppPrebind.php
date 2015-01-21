@@ -133,6 +133,10 @@ class XmppPrebind {
 
 		$response = $this->sendInitialConnection($route);
 
+		if (!preg_match('/^<body/', $response)) {
+			throw new XmppPrebindConnectionException("Cannot connect to service");
+    }
+
 		$body = self::getBodyFromXml($response);
 		$this->sid = $body->getAttribute('sid');
 		$this->debug($this->sid, 'sid');
