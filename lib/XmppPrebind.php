@@ -65,7 +65,7 @@ class XmppPrebind {
 
 	protected $mechanisms = array();
 
-	// the Bosh attributes for use in a client using this prebound session
+  // the Bosh attributes for use in a client using this prebound session
 	protected $wait,
 			$requests,
 			$ver,
@@ -76,13 +76,6 @@ class XmppPrebind {
 			$ack,
 			$accept,
 			$maxpause;
-
-	/**
-	 * Session creation response
-	 * 
-	 * @var DOMDocument
-	 */
-	public $response;
 
 	/**
 	 * Create a new XmppPrebind Object with the required params
@@ -132,7 +125,8 @@ class XmppPrebind {
 	 *
 	 * @param string $username Username without jabber host
 	 * @param string $password Password
-	 * @param string $route Route
+	 * @param bool|string $route Route
+	 * @throws XmppPrebindConnectionException
 	 */
 	public function connect($username, $password, $route = false) {
 		$this->jid      = $username . '@' . $this->jabberHost;
@@ -151,6 +145,13 @@ class XmppPrebind {
 
 		$body = self::getBodyFromXml($response);
 		$this->sid = $body->getAttribute('sid');
+		$this->debug($this->sid, 'sid');
+
+		$mechanisms = $body->getElementsByTagName('mechanism');
+
+		foreach ($mechanisms as $value) {
+			$this->mechanisms[] = $value->nodeValue;
+		}
 
 		// set the Bosh Attributes
 		$this->wait = $body->getAttribute('wait');
@@ -162,24 +163,6 @@ class XmppPrebind {
 		$this->to = $body->getAttribute('to');
 		$this->accept = $body->getAttribute('accept');
 		$this->maxpause = $body->getAttribute('maxpause');
-
-		$this->debug($this->sid, 'sid');
-
-		$mechanisms = $body->getElementsByTagName('mechanism');
-		
-		foreach ($mechanisms as $value) {
-			$this->mechanisms[] = $value->nodeValue;
-		}
-
-		if (in_array(self::ENCRYPTION_DIGEST_MD5, $this->mechanisms)) {
-			$this->encryption = self::ENCRYPTION_DIGEST_MD5;
-		} elseif (in_array(self::ENCRYPTION_CRAM_MD5, $this->mechanisms)) {
-			$this->encryption = self::ENCRYPTION_CRAM_MD5;
-		} elseif (in_array(self::ENCRYPTION_PLAIN, $this->mechanisms)) {
-			$this->encryption = self::ENCRYPTION_PLAIN;
-		} else {
-			throw new XmppPrebindConnectionException("No encryption supported by the server is supported by this library.");
-		}
 
 		$this->debug($this->encryption, 'encryption used');
 
@@ -223,7 +206,7 @@ class XmppPrebind {
 	}
 
 	/**
-	 * Get BOSH parameters to properly setup the BOSH client
+	 * Get jid, sid and rid for attaching
 	 *
 	 * @return array
 	 */
@@ -242,7 +225,6 @@ class XmppPrebind {
 				'maxpause' => $this->maxpause,
 		);
 	}
-
 	/**
 	 * Get jid, sid and rid for attaching
 	 *
@@ -365,7 +347,7 @@ class XmppPrebind {
 		$body->appendChild(self::getNewTextAttribute($domDocument, 'xmlns:xmpp', self::XMLNS_BOSH));
 		$body->appendChild(self::getNewTextAttribute($domDocument, 'xmpp:version', '1.0'));
 		$body->appendChild(self::getNewTextAttribute($domDocument, 'wait', $waitTime));
-		
+
 		if ($route)
 		{
 			$body->appendChild(self::getNewTextAttribute($domDocument, 'route', $route));
@@ -497,12 +479,13 @@ class XmppPrebind {
 		return $domDocument->saveXML();
 	}
 
-	/**
-	 * Send XML via CURL
-	 *
-	 * @param string $xml
-	 * @return string Response
-	 */
+  /**
+   * Send XML via CURL
+   *
+   * @param string $xml
+   * @return string Response
+   * @throws XmppPrebindConnectionException
+   */
 	protected function send($xml) {
 		$ch = curl_init($this->boshUri);
 		curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -668,6 +651,7 @@ class XmppPrebind {
 	protected function getAndIncrementRid() {
 		return $this->rid++;
 	}
+
 }
 
 /**
@@ -675,4 +659,4 @@ class XmppPrebind {
  */
 class XmppPrebindException extends Exception{}
 
-class XmppPrebindConnectionException extends XmppPrebindException{}
+class XmppPrebindConnectionException extends XmppPrebindException {}
