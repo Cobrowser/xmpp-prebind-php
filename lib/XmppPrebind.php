@@ -66,16 +66,16 @@ class XmppPrebind {
 	protected $mechanisms = array();
 
   // the Bosh attributes for use in a client using this prebound session
-  protected $wait,
-      $requests,
-      $ver,
-      $polling,
-      $inactivity,
-      $hold,
-      $to,
-      $ack,
-      $accept,
-      $maxpause;
+	protected $wait,
+			$requests,
+			$ver,
+			$polling,
+			$inactivity,
+			$hold,
+			$to,
+			$ack,
+			$accept,
+			$maxpause;
 
 	/**
 	 * Create a new XmppPrebind Object with the required params
@@ -125,7 +125,8 @@ class XmppPrebind {
 	 *
 	 * @param string $username Username without jabber host
 	 * @param string $password Password
-	 * @param string $route Route
+	 * @param bool|string $route Route
+	 * @throws XmppPrebindConnectionException
 	 */
 	public function connect($username, $password, $route = false) {
 		$this->jid      = $username . '@' . $this->jabberHost;
@@ -147,21 +148,21 @@ class XmppPrebind {
 		$this->debug($this->sid, 'sid');
 
 		$mechanisms = $body->getElementsByTagName('mechanism');
-		
+
 		foreach ($mechanisms as $value) {
 			$this->mechanisms[] = $value->nodeValue;
 		}
 
-    // set the Bosh Attributes
-    $this->wait = $body->getAttribute('wait');
-    $this->requests = $body->getAttribute('requests');
-    $this->ver = $body->getAttribute('ver');
-    $this->polling = $body->getAttribute('polling');
-    $this->inactivity = $body->getAttribute('inactivity');
-    $this->hold = $body->getAttribute('hold');
-    $this->to = $body->getAttribute('to');
-    $this->accept = $body->getAttribute('accept');
-    $this->maxpause = $body->getAttribute('maxpause');
+		// set the Bosh Attributes
+		$this->wait = $body->getAttribute('wait');
+		$this->requests = $body->getAttribute('requests');
+		$this->ver = $body->getAttribute('ver');
+		$this->polling = $body->getAttribute('polling');
+		$this->inactivity = $body->getAttribute('inactivity');
+		$this->hold = $body->getAttribute('hold');
+		$this->to = $body->getAttribute('to');
+		$this->accept = $body->getAttribute('accept');
+		$this->maxpause = $body->getAttribute('maxpause');
 
 		$this->debug($this->encryption, 'encryption used');
 
@@ -203,27 +204,27 @@ class XmppPrebind {
 
 		return true;
 	}
-  
-  /**
-   * Get jid, sid and rid for attaching
-   *
-   * @return array
-   */
-  public function getBoshInfo()
-  {
-    return array(
-        'wait' => $this->wait,
-        'requests' => $this->requests,
-        'ver' => $this->ver,
-        'polling' => $this->polling,
-        'inactivity' => $this->inactivity,
-        'hold' => $this->hold,
-        'to' => $this->to,
-        'ack' => $this->ack,
-        'accept' => $this->accept,
-        'maxpause' => $this->maxpause,
-    );
-  }
+
+	/**
+	 * Get jid, sid and rid for attaching
+	 *
+	 * @return array
+	 */
+	public function getBoshInfo()
+	{
+		return array(
+				'wait' => $this->wait,
+				'requests' => $this->requests,
+				'ver' => $this->ver,
+				'polling' => $this->polling,
+				'inactivity' => $this->inactivity,
+				'hold' => $this->hold,
+				'to' => $this->to,
+				'ack' => $this->ack,
+				'accept' => $this->accept,
+				'maxpause' => $this->maxpause,
+		);
+	}
 	/**
 	 * Get jid, sid and rid for attaching
 	 *
@@ -346,7 +347,7 @@ class XmppPrebind {
 		$body->appendChild(self::getNewTextAttribute($domDocument, 'xmlns:xmpp', self::XMLNS_BOSH));
 		$body->appendChild(self::getNewTextAttribute($domDocument, 'xmpp:version', '1.0'));
 		$body->appendChild(self::getNewTextAttribute($domDocument, 'wait', $waitTime));
-		
+
 		if ($route)
 		{
 			$body->appendChild(self::getNewTextAttribute($domDocument, 'route', $route));
@@ -478,12 +479,13 @@ class XmppPrebind {
 		return $domDocument->saveXML();
 	}
 
-	/**
-	 * Send XML via CURL
-	 *
-	 * @param string $xml
-	 * @return string Response
-	 */
+  /**
+   * Send XML via CURL
+   *
+   * @param string $xml
+   * @return string Response
+   * @throws XmppPrebindConnectionException
+   */
 	protected function send($xml) {
 		$ch = curl_init($this->boshUri);
 		curl_setopt($ch, CURLOPT_HEADER, 0);
