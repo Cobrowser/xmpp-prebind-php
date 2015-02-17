@@ -24,6 +24,20 @@ $xmppPrebind = new XmppPrebind('your-jabber-host.tld', 'http://your-jabber-host/
 $xmppPrebind->connect($username, $password);
 $xmppPrebind->auth();
 $sessionInfo = $xmppPrebind->getSessionInfo(); // array containing sid, rid and jid
+// // array containing relevant BOSH info i.e.
+// {
+//   wait: "60"
+//   requests: "2"
+//   ver: "1.8"
+//   polling: "2"
+//   inactivity: "10"
+//   hold: ""
+//   to: ""
+//   ack: null
+//   accept: ""
+//   maxpause: "120"
+// }
+$boshInfo = $xmppPrebind->getBoshInfo(); 
 ```
 
 * If you use [Candy](http://amiadogroup.github.com/candy), change the `Candy.Core.Connect()` line to the following:
